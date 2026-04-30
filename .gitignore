@@ -1,0 +1,15 @@
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local notes / scratch
+notes/
+scratch/
+*.local
