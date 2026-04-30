@@ -91,7 +91,7 @@ This is the case Step 2 can't fix on stock Android. The workaround is a small co
 ### Install
 
 ```
-git clone https://github.com/<your-username>/adb-quickstart.git
+git clone https://github.com/Tarunswamy-Muralidharan/adb-quickstart.git
 cd adb-quickstart
 ```
 
