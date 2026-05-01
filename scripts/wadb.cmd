@@ -2,39 +2,96 @@
 setlocal EnableDelayedExpansion
 
 REM ============================================================
-REM  Wireless ADB - one-click setup
+REM  Wireless ADB - smart one-click
 REM
-REM  Plug your Android phone via USB, double-click this file,
-REM  unplug when it says "SUCCESS." Wireless ADB will be live
-REM  until the phone reboots.
+REM  Behavior:
+REM    Phase 1: Try last-known phone IP (cached). No USB needed.
+REM    Phase 2: Try default gateway (phone hotspot). No USB needed.
+REM    Phase 3: Fall back to USB-tethered setup (after phone reboot).
+REM
+REM  Re-points to a fresh wireless connection in 1-2s if the phone
+REM  is still listening; only requires USB after a phone reboot.
 REM ============================================================
 
-REM ---- Locate adb on PATH (winget link, manual install, etc.) ----
+REM ---- Locate adb on PATH ----
 set "ADB="
 for /f "delims=" %%i in ('where adb 2^>nul') do (
     if not defined ADB set "ADB=%%i"
 )
 
 if not defined ADB (
-    echo [ERROR] adb is not installed or not on PATH.
-    echo.
+    echo [ERROR] adb not found on PATH.
     echo Install Android platform-tools first:
     echo   winget install Google.PlatformTools
-    echo Then close this window, open a new terminal, and run again.
-    echo.
+    echo Then close this window and reopen your terminal.
     pause
     exit /b 1
 )
 
+set "CACHE_DIR=%LOCALAPPDATA%\wadb"
+set "LAST_IP_FILE=%CACHE_DIR%\last_ip.txt"
+if not exist "%CACHE_DIR%" mkdir "%CACHE_DIR%" >nul 2>&1
+
 echo.
 echo ===============================================
-echo   Wireless ADB Setup
+echo   Wireless ADB
 echo ===============================================
 echo.
 
 "%ADB%" start-server >nul 2>nul
 
-REM ---- Find a USB-connected phone (serial NOT in IP:port form) ----
+REM ---- Build candidate IP list: cached first, then default gateway ----
+set "CANDIDATES="
+if exist "%LAST_IP_FILE%" (
+    for /f "usebackq" %%i in ("%LAST_IP_FILE%") do (
+        if not defined CANDIDATES set "CANDIDATES=%%i"
+    )
+)
+
+set "GW="
+for /f "tokens=*" %%i in ('powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue | Sort-Object RouteMetric | Select-Object -First 1).NextHop"') do (
+    set "GW=%%i"
+)
+
+if defined GW (
+    if not "!GW!"=="!CANDIDATES!" (
+        if defined CANDIDATES (
+            set "CANDIDATES=!CANDIDATES! !GW!"
+        ) else (
+            set "CANDIDATES=!GW!"
+        )
+    )
+)
+
+REM ---- Phase 1+2: Try wireless reconnect (no USB) ----
+if defined CANDIDATES (
+    for %%c in (!CANDIDATES!) do (
+        echo Trying %%c:5555 ...
+        "%ADB%" connect %%c:5555 >nul 2>&1
+        ping 127.0.0.1 -n 2 >nul
+        "%ADB%" devices | findstr /c:"%%c:5555" | findstr /c:"device" >nul
+        if not errorlevel 1 (
+            echo %%c> "%LAST_IP_FILE%"
+            echo.
+            echo ===============================================
+            echo   Connected at %%c:5555 ^(no USB needed^)
+            echo ===============================================
+            echo.
+            "%ADB%" devices
+            echo.
+            pause
+            exit /b 0
+        )
+        "%ADB%" disconnect %%c:5555 >nul 2>&1
+    )
+    echo No wireless listener responded.
+    echo.
+)
+
+REM ---- Phase 3: USB-required setup ----
+echo Falling back to USB setup ^(needed after phone reboot^).
+echo.
+
 set "PHONE_SERIAL="
 for /f "skip=1 tokens=1,2" %%a in ('"%ADB%" devices') do (
     if "%%b"=="device" (
@@ -46,10 +103,10 @@ for /f "skip=1 tokens=1,2" %%a in ('"%ADB%" devices') do (
 if not defined PHONE_SERIAL (
     echo [ERROR] No USB-connected phone found.
     echo.
-    echo  - Plug the phone in with the USB cable.
-    echo  - Unlock the phone.
-    echo  - Accept the "Allow USB debugging?" prompt.
-    echo  - Run this script again.
+    echo  - Plug the phone in with the USB cable
+    echo  - Unlock the phone
+    echo  - Accept the "Allow USB debugging?" prompt
+    echo  - Run this script again
     echo.
     pause
     exit /b 1
@@ -58,7 +115,6 @@ if not defined PHONE_SERIAL (
 echo Phone detected on USB: %PHONE_SERIAL%
 echo.
 
-REM ---- Read phone IP: try ap0 (hotspot) first, then wlan0 (WiFi) ----
 set "PHONE_IP="
 for /f "tokens=4" %%i in ('"%ADB%" -s %PHONE_SERIAL% shell ip -o -4 addr show ap0 2^>nul') do (
     if not defined PHONE_IP set "PHONE_IP=%%i"
@@ -74,27 +130,21 @@ if not defined PHONE_IP (
 
 if not defined PHONE_IP (
     echo [ERROR] Could not detect phone IP.
-    echo  - Turn on phone hotspot, OR
-    echo  - Connect phone to a WiFi network,
-    echo  then run this script again.
-    echo.
+    echo Turn on phone hotspot or connect to WiFi, then run again.
     pause
     exit /b 1
 )
 
 echo Phone IP: %PHONE_IP%
 echo.
-
-REM ---- Flip adbd to TCP/IP mode on port 5555 ----
 echo Switching phone adbd to TCP/IP mode (port 5555)...
 "%ADB%" -s %PHONE_SERIAL% tcpip 5555
-timeout /t 2 /nobreak >nul
+ping 127.0.0.1 -n 3 >nul
 
 echo Connecting to %PHONE_IP%:5555 ...
 "%ADB%" connect %PHONE_IP%:5555
 echo.
 
-echo Current ADB devices:
 "%ADB%" devices
 echo.
 
@@ -102,6 +152,7 @@ echo.
 if errorlevel 1 (
     echo [WARN] Wireless connection not confirmed. Try running this script again.
 ) else (
+    echo %PHONE_IP%> "%LAST_IP_FILE%"
     echo ===============================================
     echo   SUCCESS - you can unplug the USB cable now.
     echo   Wireless ADB lives until the phone reboots.

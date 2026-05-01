@@ -115,11 +115,15 @@ For a desktop launcher, create a shell alias `alias wadb='/full/path/to/scripts/
 
 ### What the script does
 
-- Detects the phone via `adb devices` (only USB-connected devices, not already-wireless ones)
-- Reads the phone's IP — tries the hotspot interface (`ap0`) first, falls back to WiFi (`wlan0`)
-- Runs `adb tcpip 5555` to switch the phone's adbd into TCP listening mode
-- Runs `adb connect <ip>:5555` to verify the wireless connection works
-- Tells you to unplug
+The script is **smart about whether it actually needs USB**. Three phases, in order:
+
+1. **Try cached IP first** — last-known phone IP from previous successful run (cached in `%LOCALAPPDATA%\wadb\` on Windows, `~/.cache/wadb/` on Linux/macOS). No USB needed.
+2. **Try the default gateway** — when laptop is on phone hotspot, the gateway IS the phone. No USB needed.
+3. **Fall back to USB** — only reached when neither cached IP nor gateway responds (i.e. phone has rebooted and TCP listener is gone). At that point: detect phone over USB, run `adb tcpip 5555`, connect wirelessly, save the IP for next time.
+
+So if you just toggled the USB-debug tile and dropped the connection, the script reconnects in ~1 second over WiFi without you plugging anything in. You only see the USB-required path after a phone reboot.
+
+The `adb tcpip 5555` mechanism (used in phase 3) is the *legacy* wireless-ADB path. It binds to all interfaces (including the hotspot one), and it's not blocked by the Android 11+ WiFi-client check that Step 2 hits. It does reset every reboot — which is why phase 3 exists.
 
 The `adb tcpip 5555` mechanism is the *legacy* wireless-ADB path. It binds to all interfaces (including the hotspot one), and it's not blocked by the Android 11+ WiFi-client check that Step 2 hits. It does reset every reboot — that's why this is a script you run once per session, not a persistent service.
 

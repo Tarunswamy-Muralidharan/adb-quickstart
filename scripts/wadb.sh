@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# wadb.sh - one-click wireless ADB setup
+# wadb.sh - smart one-click wireless ADB
 #
-# Plug your Android phone via USB, run this script, unplug when it
-# says "SUCCESS". Wireless ADB will be live until the phone reboots.
+# Phase 1: try last-known phone IP (cached) - no USB needed
+# Phase 2: try default gateway (works on phone hotspot) - no USB needed
+# Phase 3: fall back to USB-tethered setup (after phone reboot)
 
 set -uo pipefail
 
@@ -16,15 +17,61 @@ if ! command -v adb >/dev/null 2>&1; then
     exit 1
 fi
 
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/wadb"
+LAST_IP_FILE="$CACHE_DIR/last_ip"
+mkdir -p "$CACHE_DIR"
+
 echo
 echo "==============================================="
-echo "  Wireless ADB Setup"
+echo "  Wireless ADB"
 echo "==============================================="
 echo
 
 adb start-server >/dev/null 2>&1
 
-# Find a USB-connected phone (serial NOT in IP:port form)
+# ---- Build candidate IP list: cached first, then default gateway ----
+candidates=()
+if [[ -f "$LAST_IP_FILE" ]]; then
+    last_ip=$(<"$LAST_IP_FILE")
+    [[ -n "$last_ip" ]] && candidates+=("$last_ip")
+fi
+
+# Default gateway (Linux/macOS variants)
+gateway=""
+if command -v ip >/dev/null 2>&1; then
+    gateway=$(ip route show default 2>/dev/null | awk '/^default/ {print $3; exit}')
+elif command -v route >/dev/null 2>&1; then
+    gateway=$(route -n get default 2>/dev/null | awk '/gateway/ {print $2; exit}')
+fi
+
+if [[ -n "$gateway" ]] && [[ ! " ${candidates[*]} " =~ " $gateway " ]]; then
+    candidates+=("$gateway")
+fi
+
+# ---- Phase 1+2: Try wireless reconnect (no USB) ----
+for ip in "${candidates[@]}"; do
+    echo "Trying $ip:5555 ..."
+    adb connect "$ip:5555" >/dev/null 2>&1 || true
+    sleep 1
+    if adb devices | grep -q "$ip:5555[[:space:]]\+device"; then
+        echo "$ip" > "$LAST_IP_FILE"
+        echo
+        echo "==============================================="
+        echo "  Connected at $ip:5555 (no USB needed)"
+        echo "==============================================="
+        echo
+        adb devices
+        exit 0
+    fi
+    adb disconnect "$ip:5555" >/dev/null 2>&1 || true
+done
+
+[[ ${#candidates[@]} -gt 0 ]] && echo "No wireless listener responded." && echo
+
+# ---- Phase 3: USB-required setup ----
+echo "Falling back to USB setup (needed after phone reboot)."
+echo
+
 PHONE_SERIAL=""
 while IFS= read -r line; do
     serial=$(awk '{print $1}' <<<"$line")
@@ -35,17 +82,16 @@ done < <(adb devices | tail -n +2)
 if [[ -z "$PHONE_SERIAL" ]]; then
     echo "[ERROR] No USB-connected phone found."
     echo
-    echo "  - Plug the phone in with the USB cable."
-    echo "  - Unlock the phone."
-    echo "  - Accept the 'Allow USB debugging?' prompt."
-    echo "  - Run this script again."
+    echo "  - Plug the phone in via USB cable"
+    echo "  - Unlock the phone"
+    echo "  - Accept the 'Allow USB debugging?' prompt"
+    echo "  - Run this script again"
     exit 1
 fi
 
 echo "Phone detected on USB: $PHONE_SERIAL"
 echo
 
-# Read phone IP - try ap0 (hotspot) first, then wlan0 (WiFi client)
 PHONE_IP=$(adb -s "$PHONE_SERIAL" shell ip -o -4 addr show ap0 2>/dev/null \
     | awk '{print $4}' | cut -d/ -f1 | head -n1 | tr -d '\r')
 if [[ -z "$PHONE_IP" ]]; then
@@ -55,9 +101,7 @@ fi
 
 if [[ -z "$PHONE_IP" ]]; then
     echo "[ERROR] Could not detect phone IP."
-    echo "  - Turn on phone hotspot, OR"
-    echo "  - Connect phone to a WiFi network,"
-    echo "  then run this script again."
+    echo "Turn on phone hotspot or connect to WiFi, then run again."
     exit 1
 fi
 
@@ -72,11 +116,11 @@ echo "Connecting to $PHONE_IP:5555 ..."
 adb connect "$PHONE_IP:5555"
 echo
 
-echo "Current ADB devices:"
 adb devices
 echo
 
-if adb devices | grep -q "$PHONE_IP:5555\s*device"; then
+if adb devices | grep -q "$PHONE_IP:5555[[:space:]]\+device"; then
+    echo "$PHONE_IP" > "$LAST_IP_FILE"
     echo "==============================================="
     echo "  SUCCESS - you can unplug the USB cable now."
     echo "  Wireless ADB lives until the phone reboots."
