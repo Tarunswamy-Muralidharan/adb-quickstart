@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Adaptive icon safe zone is the centered 66dp circle. Logo lives inside that. -->
+
+    <!-- Toggle pill (knob in OFF position so the icon reads as "switch") -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M30,68 m -10,0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.35"
+        android:pathData="M22,60 h44 a8,8 0 0 1 8,8 v0 a8,8 0 0 1 -8,8 h-44 a8,8 0 0 1 -8,-8 v0 a8,8 0 0 1 8,-8 z" />
+
+    <!-- Chevrons </> -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M44.5,46.5 L34,36 L44.5,25.5 L40,21 L25,36 L40,51 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M63.5,46.5 L74,36 L63.5,25.5 L68,21 L83,36 L68,51 Z" />
+</vector>
