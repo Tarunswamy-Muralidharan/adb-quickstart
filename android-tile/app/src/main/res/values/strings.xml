@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dev Toggle</string>
+    <string name="tile_label">Dev Options</string>
+    <string name="tile_on">Developer options + USB debugging are ON</string>
+    <string name="tile_off">Developer options + USB debugging are OFF</string>
+</resources>

@@ -1,0 +1,22 @@
+# Default: normalize line endings on commit, render native on checkout
+* text=auto
+
+# Shell scripts must stay LF for cross-platform execution
+*.sh        text eol=lf
+gradlew     text eol=lf
+scripts/wadb.sh text eol=lf
+
+# Windows scripts stay CRLF
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+
+# Binary files
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.apk       binary
+*.aab       binary
+*.jar       binary
+*.keystore  binary
+*.jks       binary
