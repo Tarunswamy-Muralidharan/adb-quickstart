@@ -41,6 +41,10 @@ Plug the phone in, accept the **Allow USB debugging?** prompt, run `adb devices`
 
 A tiny Quick Settings tile that flips both `development_settings_enabled` and `adb_enabled` in one tap. Built specifically because UPI / banking apps refuse to run when Developer Options is enabled, and disabling-and-reenabling Developer Options manually every time is annoying.
 
+<p align="center">
+  <img src="android-tile/docs/quick-settings-tile.png" alt="Dev Options tile in Quick Settings (active state)" width="320" />
+</p>
+
 | Tile state | `development_settings_enabled` | `adb_enabled` |
 |---|---|---|
 | ON  | 1 | 1 |
