@@ -5,22 +5,20 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Adaptive icon safe zone is the centered 66dp circle. Logo lives inside that. -->
+    <!--
+        Adaptive icon safe zone is the centered 66dp circle (radius 33 around 54,54).
+        Logo: a single bold toggle switch in the ON position. Simple, readable,
+        instantly communicates "developer toggle".
+    -->
 
-    <!-- Toggle pill (knob in OFF position so the icon reads as "switch") -->
+    <!-- Track: rounded pill, 72 x 36, centered. Slightly translucent so the knob pops. -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M30,68 m -10,0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:fillAlpha="0.35"
-        android:pathData="M22,60 h44 a8,8 0 0 1 8,8 v0 a8,8 0 0 1 -8,8 h-44 a8,8 0 0 1 -8,-8 v0 a8,8 0 0 1 8,-8 z" />
+        android:fillAlpha="0.30"
+        android:pathData="M36,36 h36 a18,18 0 0 1 18,18 v0 a18,18 0 0 1 -18,18 h-36 a18,18 0 0 1 -18,-18 v0 a18,18 0 0 1 18,-18 z" />
 
-    <!-- Chevrons </> -->
+    <!-- Knob: solid circle on the right (ON). -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M44.5,46.5 L34,36 L44.5,25.5 L40,21 L25,36 L40,51 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M63.5,46.5 L74,36 L63.5,25.5 L68,21 L83,36 L68,51 Z" />
+        android:pathData="M72,54 m -14,0 a 14,14 0 1,0 28,0 a 14,14 0 1,0 -28,0" />
 </vector>
