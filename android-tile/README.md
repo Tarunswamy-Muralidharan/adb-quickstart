@@ -2,6 +2,10 @@
 
 A minimal, no-root Android Quick Settings tile that flips **Developer Options** and **USB Debugging** in a single tap.
 
+<p align="center">
+  <img src="docs/quick-settings-tile.png" alt="Dev Options tile in Quick Settings (active state)" width="320" />
+</p>
+
 Built for one specific annoyance: UPI apps (PhonePe, Google Pay, Paytm), most banking apps, and some DRM apps refuse to run while Developer Options is enabled. Every time you need to use one of those apps, you have to:
 
 1. Open Settings.
