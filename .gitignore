@@ -13,3 +13,23 @@ desktop.ini
 notes/
 scratch/
 *.local
+
+# auto-backup 2026-07-26
+node_modules/
+dist/
+build/
+.gradle/
+local.properties
+.env
+.env.*
+*.jks
+*.keystore
+*.apk
+*.aab
+.idea/caches/
+.idea/workspace.xml
+__pycache__/
+*.pyc
+.next/
+out/
+coverage/
